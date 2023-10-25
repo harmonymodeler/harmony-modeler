@@ -1,0 +1,9 @@
+{
+  "name": "harmony-modeler",
+  "version": "1.0.0",
+  "author": "Devayan",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^29.5.6"
+  }
+}
