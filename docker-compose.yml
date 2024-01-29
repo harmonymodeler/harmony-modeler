@@ -1,0 +1,26 @@
+version: "3"
+
+# optional ports are specified throughout for more advanced use cases.
+
+services:
+  budibase:
+    restart: unless-stopped
+    image: budibase/budibase:latest
+    network_mode: host
+    ports:
+      - "8080:80"
+    environment:
+      JWT_SECRET: budibase
+      MINIO_ACCESS_KEY: budibase
+      MINIO_SECRET_KEY: budibase
+      REDIS_PASSWORD: budibase
+      COUCHDB_USER: budibase
+      COUCHDB_PASSWORD: budibase
+      INTERNAL_API_KEY: budibase
+      PLUGINS_DIR: /mnt/plugins
+    volumes:
+      - budibase_data:/data
+
+volumes:
+  budibase_data:
+    driver: local
