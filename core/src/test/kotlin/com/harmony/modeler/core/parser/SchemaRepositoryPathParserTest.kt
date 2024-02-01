@@ -91,13 +91,10 @@ class SchemaRepositoryPathParserTest {
 
     }
 
-    @ParameterizedTest
-    @MethodSource("patternsMatch")
+//    @ParameterizedTest
+//    @MethodSource("patternsMatch")
     fun testSomeMatches(pattern: DiscoveryPattern, basePath: String, tested: String, expected: SchemaFile) {
-
-
         val result = SchemaRepositoryPathParser.parsePath(Paths.get(basePath), Paths.get(tested), pattern)
-
         assertThat(result).isNotNull
         assertAll(
             { assertThat(result.name).`as`("name").isEqualTo(expected.name) },

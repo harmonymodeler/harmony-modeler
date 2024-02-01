@@ -5,14 +5,19 @@ import com.harmony.modeler.core.services.FileLoader
 import com.harmony.modeler.core.models.repository.SchemaRepository
 import com.harmony.modeler.core.models.schema.Schema
 import com.harmony.modeler.core.models.schema.SchemaFormat
+import io.github.oshai.kotlinlogging.KotlinLogging
 import java.io.File
 import java.net.URI
 import java.nio.file.Paths
+import java.time.Instant
 import java.util.regex.Pattern
 import kotlin.io.path.absolutePathString
+import kotlin.math.log
 
 class SchemaRepositoryParser {
     companion object {
+        private val logger = KotlinLogging.logger {}
+        
         private fun shouldParseInfos(schemaRepository: SchemaRepository): Boolean {
             return schemaRepository.name == null || schemaRepository.organization == null
         }
@@ -60,9 +65,8 @@ class SchemaRepositoryParser {
 
         fun parse(schemaRepository: SchemaRepository): Sequence<Schema> {
             if (schemaRepository.localPath != null) {
-//                val repositoryPath = schemaRepository.localPath + "/" + schemaRepository.rootPath
                 val repositoryPath = Paths.get(schemaRepository.localPath, schemaRepository.rootPath)
-                return File(repositoryPath.toString())
+                val result = File(repositoryPath.toString())
                     .walk()
                     .filter {
                         it.isFile
@@ -70,6 +74,7 @@ class SchemaRepositoryParser {
                     .flatMap {
                         parse(schemaRepository, it)
                     }
+                return result
             }
             return emptySequence()
         }
