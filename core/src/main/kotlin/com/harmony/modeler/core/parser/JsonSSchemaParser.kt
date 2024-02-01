@@ -1,8 +1,10 @@
 package com.harmony.modeler.core.parser
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.node.ArrayNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.harmony.modeler.core.models.schema.Schema
@@ -20,7 +22,14 @@ import kotlin.collections.HashSet
 
 class JsonSSchemaParser : SchemaParser {
     private val logger = KotlinLogging.logger {}
-
+    
+    val mapper = ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
+            .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+    
+    val alreadyRefed = HashMap<String, Schema>()
+    val reffingStack = HashSet<String>()
 
     fun parseProperties(jsonProperties: JsonNode?, rootNode: JsonNode, evaluateRef: Boolean): MutableList<Schema>? {
         var fields: MutableList<Schema>? = null
@@ -90,6 +99,10 @@ class JsonSSchemaParser : SchemaParser {
         return isReference(jsonNode) && (alreadyRefed[getReference(jsonNode)?.asText()] != null)
     }
 
+    /**
+     * This function is quite debatable, we could probably just parse the already de-referenced schema,
+     * benefiting from others.
+     */
     fun parseReference(jsonNode: JsonNode, rootNode: JsonNode, evaluateRef: Boolean): Schema? {
         val ref = jsonNode.get("\$ref").asText()
         if (ref != null && (ref.startsWith("#/definitions") || ref.startsWith("#/\$defs"))) {
@@ -98,7 +111,7 @@ class JsonSSchemaParser : SchemaParser {
             val refNode = rootNode
                 .get(refHoldingNode)
                 .get(schemaName)
-            logger.info { "Handling ref $ref" }
+//            logger.info { "Handling ref $ref" }
             val shouldEvaluateNextRefs = !reffingStack.contains(ref)
             reffingStack.add(ref)
             val schema = parse(refNode, rootNode, shouldEvaluateNextRefs)
@@ -106,13 +119,30 @@ class JsonSSchemaParser : SchemaParser {
 //                reffingStack.remove(ref)
             alreadyRefed[ref] = schema
             return schema
+        } else if (ref != null) {
+            logger.warn { "Unsupported reference ${jsonNode.get("\$ref").asText()}" }
         }
+        
         return null
     }
-
-    val alreadyRefed = HashMap<String, Schema>()
-
-    val reffingStack = HashSet<String>()
+    
+    fun undescribedSchemaString(jsonNode: JsonNode): String {
+        var result = jsonNode
+        if (jsonNode.get("description") != null) {
+            val toTransform: ObjectNode = jsonNode.deepCopy()
+            toTransform.remove("description")
+            result = toTransform
+        }
+        return mapper.writeValueAsString(result)
+    }
+    
+    fun parseArray(jsonNode: JsonNode, field: String, rootNode: JsonNode, evaluateRef: Boolean): List<Schema>? {
+        val arrayNode = jsonNode.get(field)
+        if (arrayNode != null) {
+            return parseArray(jsonNode.get(field), rootNode, evaluateRef)
+        }
+        return null;
+    }
 
     fun parse(jsonNode: JsonNode, rootNode: JsonNode, evaluateRef: Boolean = true): Schema {
         if (evaluateRef && jsonNode.get("\$ref") != null) {
@@ -144,30 +174,14 @@ class JsonSSchemaParser : SchemaParser {
 
         var possibleTypes = mutableListOf<Schema>()
 
-        val anyOfNode = jsonNode.get("anyOf")
-        if (anyOfNode != null) {
-            val anyOf = parseArray(jsonNode.get("anyOf"), rootNode, evaluateRef)
-            if (anyOf != null) {
-                possibleTypes.addAll(anyOf)
-            }
-        }
-
-        val allOfNode = jsonNode.get("allOf")
-        if (allOfNode != null) {
-            val allOf = parseArray(jsonNode.get("allOf"), rootNode, evaluateRef)
-            if (allOf != null) {
-                possibleTypes.addAll(allOf)
-            }
-        }
-
-        val oneOfNode = jsonNode.get("oneOf")
-        if (oneOfNode != null) {
-            val oneOf = parseArray(jsonNode.get("oneOf"), rootNode, evaluateRef)
-            if (oneOf != null) {
-                possibleTypes.addAll(oneOf)
-            }
-        }
-
+        val anyOfNode = parseArray(jsonNode, "anyOf", rootNode, evaluateRef)
+        val allOfNode = parseArray(jsonNode, "allOf", rootNode, evaluateRef)
+        val oneOfNode = parseArray(jsonNode, "oneOf", rootNode, evaluateRef)
+        
+        if (allOfNode != null) possibleTypes.addAll(allOfNode)
+        if (oneOfNode != null) possibleTypes.addAll(oneOfNode)
+        if (anyOfNode != null) possibleTypes.addAll(anyOfNode)
+            
         return Schema.builder()
             .name(jsonNode.get("title")?.asText())
             .format(SchemaFormat.json.value())
@@ -178,6 +192,7 @@ class JsonSSchemaParser : SchemaParser {
             .type(type)
             .possibleTypes(if (possibleTypes.isEmpty()) null else possibleTypes)
             .items(items)
+            .undescribedSchemaString(undescribedSchemaString(jsonNode))
             .version(jsonNode.get("version")?.asText())
             .fields(parseProperties(jsonNode.get("properties"), rootNode, evaluateRef))
             .enumeration(parseEnum(jsonNode.get("enum")))

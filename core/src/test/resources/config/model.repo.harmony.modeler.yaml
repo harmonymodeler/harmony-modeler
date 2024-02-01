@@ -1,0 +1,7 @@
+rootPath: src/definitions/json
+discoveryPatterns:
+  - name: "yes"
+    capture: "definitions/json/(?<domain>[a-z])+/(?<category>[a-z])+"
+
+
+

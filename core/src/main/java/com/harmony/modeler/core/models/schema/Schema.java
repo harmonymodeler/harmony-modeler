@@ -21,6 +21,13 @@ public class Schema {
     private SchemaFile schemaFile;
     private String schema;
 
+    /**
+     * Json string representation of the original raw json but without the 'description' attribute
+     * Rationale is being able to compare two schema without having to map all the check information not
+     * that useful for indexing.
+     */
+    private String undescribedSchemaString;
+
     private String domain;
     private String version;
     private String type;
@@ -52,6 +59,14 @@ public class Schema {
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, format);
+        return Objects.hash(name, type, format, undescribedSchemaString, fields, possibleTypes);
+    }
+
+    @Override
+    public String toString() {
+        return "Schema{" +
+            "name='" + name + '\'' +
+            ", schema='" + undescribedSchemaString + '\'' +
+            '}';
     }
 }
