@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/2020-12/schema#",
+  "$id": "https://json.schemastore.org/accelerator.json",
+  "$defs": {
+    "Schema1": {
+      "properties": {
+        "attribute_2": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Schema2"
+            }
+          ]
+        }
+      }
+    },
+    "Schema2": {
+      "properties": {
+        "attribute_2": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Schema1"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "properties": {
+    "toto": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Schema1"
+        }
+      ]
+    },
+    "attribute_4": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Schema1"
+        }
+      ]
+    }
+  }
+}

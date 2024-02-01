@@ -1,13 +1,15 @@
 package com.harmony.modeler.core.parser
 
+import arrow.core.Either
 import com.harmony.modeler.core.services.FileLoader
 import com.harmony.modeler.core.models.repository.SchemaRepository
 import com.harmony.modeler.core.models.schema.Schema
+import com.harmony.modeler.core.models.schema.SchemaFormat
+import java.io.File
 import java.net.URI
-import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.regex.Pattern
-import kotlin.io.path.isDirectory
+import kotlin.io.path.absolutePathString
 
 class SchemaRepositoryParser {
     companion object {
@@ -31,36 +33,45 @@ class SchemaRepositoryParser {
                 .withOrganization(organization)
         }
 
-        fun parse(schemaRepository: SchemaRepository): MutableList<Schema> {
-            val myList: MutableList<Schema> = mutableListOf()
+        fun parse(schemaRepository: SchemaRepository, file: File): List<Schema> {
+            val matchingPattern = schemaRepository.discoveryPatterns.find {
+                Pattern.compile(it.capture).matcher(file.absolutePath).matches()
+            }
+            val basePath = Paths.get(schemaRepository.localPath)
 
+            if (matchingPattern != null) {
+                val schemaFile = SchemaRepositoryPathParser.parsePath(basePath, file.toPath(), matchingPattern)
+
+                try {
+                    // du génie
+                    return SchemaParser(schemaFile.format)
+                        .parse(basePath, schemaFile)
+                } catch (e: Exception) {
+                    return listOf(
+                        Schema.builder()
+                            .schemaFile(schemaFile)
+                            .errors(listOf(e))
+                            .build()
+                    )
+                }
+            }
+            return emptyList()
+        }
+
+        fun parse(schemaRepository: SchemaRepository): Sequence<Schema> {
             if (schemaRepository.localPath != null) {
+//                val repositoryPath = schemaRepository.localPath + "/" + schemaRepository.rootPath
                 val repositoryPath = Paths.get(schemaRepository.localPath, schemaRepository.rootPath)
-
-                Files.walk(repositoryPath)
+                return File(repositoryPath.toString())
+                    .walk()
                     .filter {
-                        !it.isDirectory()
+                        it.isFile
                     }
                     .flatMap {
-                        path -> schemaRepository.discoveryPatterns.map {
-                                Triple(path, it, Pattern.compile(it.capture).matcher(path.toAbsolutePath().toString()).matches())
-                            }.stream()
-                    }
-                    .filter {
-                        it.third
-                    }
-                    .forEach{
-                        val schemaFile = SchemaRepositoryPathParser.parsePath(it.first, it.second)
-                        try {
-                            val schemaString = FileLoader(schemaFile.format).load(it.first)
-                            val schema = SchemaParser(schemaFile.format).parse(schemaString)
-                            myList.addAll(schema)
-                        } catch (e: Exception) {
-                            println("${schemaFile.filePath} : ${e.message}")
-                        }
+                        parse(schemaRepository, it)
                     }
             }
-            return myList
+            return emptySequence()
         }
     }
 }

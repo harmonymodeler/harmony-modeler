@@ -12,65 +12,50 @@ import java.util.regex.Pattern
 import kotlin.io.path.extension
 
 interface SchemaRepositoryPathParser {
-
-
-
-    fun parse(schema: String): SchemaFile
-
     companion object {
-        fun parsePath(path: Path, discoveryPattern: DiscoveryPattern): SchemaFile {
+
+        public fun createMatcher(pattern: String, stringToTest: String): Matcher {
+            val captureMatcher = Pattern.compile(pattern)
+                .matcher(stringToTest)
+            captureMatcher.find()
+            return captureMatcher
+        }
+
+        fun parsePathString(basePath: String, path: String, discoveryPattern: DiscoveryPattern) {
+
+        }
+
+        fun parsePath(basePath: Path, path: Path, discoveryPattern: DiscoveryPattern): SchemaFile {
             val schemaFile = SchemaFile.builder()
-                .filePath(path.toAbsolutePath().toString())
+                .filePath(basePath.relativize(path).toString())
                 .format(SchemaFormat.valueOf(path.extension))
                 .schema(Files.readString(path))
+                .matchedBy(discoveryPattern)
                 .qualifier("")
                 .build()
 
-            val captureMatcher = Pattern.compile(discoveryPattern.capture)
-                .matcher(schemaFile.filePath)
+            val captureMatcher = createMatcher(discoveryPattern.capture, schemaFile.filePath)
+
+            val name = captureGroup("name", captureMatcher)
+                ?.replace("-"," ")
+                ?.trim()
 
             return schemaFile
-                .withName(captureGroup("name", captureMatcher))
+                .withName(name)
                 .withDomain(captureGroup("domain", captureMatcher))
                 .withVersion(captureGroup("version", captureMatcher))
-        }
-
-        private fun shouldParseInfos(schemaRepository: SchemaRepository): Boolean {
-            return schemaRepository.name == null || schemaRepository.organization == null
-        }
-
-        fun parseInfos(schemaRepository: SchemaRepository): SchemaRepository {
-            val uri = URI(schemaRepository.url)
-            var name = schemaRepository.name
-            var organization = schemaRepository.organization
-
-            if (shouldParseInfos(schemaRepository)) {
-                val paths = uri.path.split("/")
-                name = paths[1]
-                organization = paths[2]
-            }
-
-            return schemaRepository
-                .withName(name)
-                .withOrganization(organization)
         }
 
         private fun captureGroup(name: String, matcher: Matcher): String? {
             return try {
-                matcher.group(name)
-            } catch (exception: IllegalStateException) {
+                val extracted = matcher.group(name)
+                if (extracted.isEmpty()) {
+                    return null
+                }
+                return extracted
+            } catch (exception: Exception) {
                 null;
             }
-        }
-
-        fun parse(schemaFile: SchemaFile, discoveryPattern: DiscoveryPattern): SchemaFile? {
-            val captureMatcher = Pattern.compile(discoveryPattern.capture)
-                .matcher(schemaFile.filePath)
-
-            return schemaFile
-                .withName(captureGroup("name", captureMatcher))
-                .withDomain(captureGroup("domain", captureMatcher))
-                .withVersion(captureGroup("version", captureMatcher))
         }
     }
 }

@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://json.schemastore.org/accelerator.json",
+  "definitions": {
+    "Schema1": {
+      "properties": {
+        "attribute_2": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/Schema2"
+            }
+          ]
+        }
+      }
+    },
+    "Schema2": {
+      "properties": {
+        "attribute_2": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/Schema1"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "properties": {
+    "toto": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/Schema1"
+        }
+      ]
+    },
+    "attribute_4": {
+      "oneOf": [
+        {
+          "$ref": "#/definitions/Schema1"
+        }
+      ]
+    }
+  }
+}

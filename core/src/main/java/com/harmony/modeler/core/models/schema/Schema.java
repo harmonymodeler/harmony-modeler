@@ -1,12 +1,10 @@
 package com.harmony.modeler.core.models.schema;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 
 @Data
 @With
@@ -26,10 +24,18 @@ public class Schema {
     private String domain;
     private String version;
     private String type;
+
+    private List<Schema> items;
+
     private String format;
+    private String formatVersion;
     private List<String> enumeration = new ArrayList<>();
     private List<Schema> fields = new ArrayList<>();
-    private List<Schema> oneOf = new ArrayList<>();
+
+    private List<Schema> possibleTypes = new ArrayList<>();
+
+    private List<Exception> errors = new ArrayList<>();
+
 
 
     @Override
@@ -41,7 +47,7 @@ public class Schema {
                 && Objects.equals(type, schema.type)
                 && Objects.equals(fields, schema.fields)
                 && Objects.equals(enumeration, schema.enumeration)
-                && Objects.equals(oneOf, schema.oneOf);
+                && Objects.equals(possibleTypes, schema.possibleTypes);
     }
 
     @Override

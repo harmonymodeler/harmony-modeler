@@ -36,7 +36,7 @@ class SchemaRepositoryController(val schemaRepositoryRepository: SchemaRepositor
 
     @PostMapping("/parse")
     @ResponseBody
-    fun parse(@RequestBody schemaRepository: SchemaRepository): MutableList<Schema> {
+    fun parse(@RequestBody schemaRepository: SchemaRepository): Sequence<Schema> {
         return SchemaRepositoryParser.parse(schemaRepository);
     }
 
