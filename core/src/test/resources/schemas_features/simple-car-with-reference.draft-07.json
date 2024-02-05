@@ -1,0 +1,35 @@
+{
+  "$id": "a-car",
+  "title": "Car",
+  "type": "object",
+  "description": "A Car",
+  "definitions": {
+    "Date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "A date"
+    }
+  },
+  "additionalProperties": false,
+  "causa": {
+    "tsOpenApi": true
+  },
+  "properties": {
+    "brand": {
+      "type": "string",
+      "description": "The car's brand"
+    },
+    "model": {
+      "type": "string",
+      "description": "The car's model"
+    },
+    "producedAt": {
+      "$ref": "#/definitions/Date",
+      "description": "When the car has been produced"
+    },
+    "soldAt": {
+      "$ref": "#/definitions/Date",
+      "description": "When the car has been sold"
+    }
+  }
+}

@@ -16,6 +16,7 @@ public class Schema {
     private String url;
     private String namespace;
     private String name;
+    private String fieldName;
     private String description;
 
     private SchemaFile schemaFile;
@@ -37,6 +38,7 @@ public class Schema {
     private String format;
     private String formatVersion;
     private List<String> enumeration = new ArrayList<>();
+    
     private List<Schema> fields = new ArrayList<>();
 
     private List<Schema> possibleTypes = new ArrayList<>();
@@ -66,7 +68,8 @@ public class Schema {
     public String toString() {
         return "Schema{" +
             "name='" + name + '\'' +
-            ", schema='" + undescribedSchemaString + '\'' +
+            ", fieldName='" + fieldName + '\'' +
+            ", undescribedSchemaString='" + undescribedSchemaString + '\'' +
             '}';
     }
 }

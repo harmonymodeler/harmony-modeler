@@ -16,6 +16,7 @@ class SchemaService {
             results.add(schema)
             while (!queue.isEmpty()) {
                 val toExplode = queue.poll()
+                toExplode.schemaFile = schema.schemaFile
                 if (toExplode.fields != null) {
                     results.addAll(toExplode.fields)
                     queue.addAll(toExplode.fields)

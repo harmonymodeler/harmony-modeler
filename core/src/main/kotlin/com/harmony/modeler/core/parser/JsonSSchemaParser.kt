@@ -28,6 +28,8 @@ class JsonSSchemaParser : SchemaParser {
             .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
             .setSerializationInclusion(JsonInclude.Include.NON_NULL)
     
+    val parsedSchemas = HashMap<String, Schema>()
+    
     val alreadyRefed = HashMap<String, Schema>()
     val reffingStack = HashSet<String>()
 
@@ -40,7 +42,7 @@ class JsonSSchemaParser : SchemaParser {
             )
                 .map {
                     val schema = parse(it.value, rootNode, evaluateRef)
-                    schema.name = it.key
+                    schema.fieldName = it.key
                     schema
                 }
                 .toList()
@@ -145,6 +147,12 @@ class JsonSSchemaParser : SchemaParser {
     }
 
     fun parse(jsonNode: JsonNode, rootNode: JsonNode, evaluateRef: Boolean = true): Schema {
+        val jsonNodeText = jsonNode.toString()
+        
+        if (parsedSchemas[jsonNodeText] != null) {
+            return parsedSchemas[jsonNodeText]!!
+        }
+        
         if (evaluateRef && jsonNode.get("\$ref") != null) {
             val parsedRef = parseReference(jsonNode, rootNode, evaluateRef)
             if (parsedRef != null) {
@@ -181,8 +189,8 @@ class JsonSSchemaParser : SchemaParser {
         if (allOfNode != null) possibleTypes.addAll(allOfNode)
         if (oneOfNode != null) possibleTypes.addAll(oneOfNode)
         if (anyOfNode != null) possibleTypes.addAll(anyOfNode)
-            
-        return Schema.builder()
+        
+        val schema = Schema.builder()
             .name(jsonNode.get("title")?.asText())
             .format(SchemaFormat.json.value())
             .namespace(jsonNode.get("\$id")?.asText())
@@ -199,6 +207,10 @@ class JsonSSchemaParser : SchemaParser {
             .formatVersion(formatVersion)
             .schema(jsonNode.toString())
             .build();
+
+        parsedSchemas[jsonNodeText] = schema
+
+        return schema;
     }
 
     fun parse(jsonNode: JsonNode): Schema {
@@ -215,6 +227,7 @@ class JsonSSchemaParser : SchemaParser {
 
     override fun parse(basePath: Path, schemaFile: SchemaFile): List<Schema> {
         logger.info { "Parsing file ${schemaFile.filePath}" }
+        
         val schemaString = FileLoader(schemaFile.format)
             .load(Paths.get(basePath.toString(), schemaFile.filePath))
         return parse(schemaString)

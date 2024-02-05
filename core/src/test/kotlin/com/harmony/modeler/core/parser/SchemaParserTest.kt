@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.harmony.modeler.core.models.repository.DiscoveryPattern
 import com.harmony.modeler.core.models.schema.SchemaFile
 import com.harmony.modeler.core.models.schema.SchemaFormat
+import com.harmony.modeler.core.repositories.InMemorySchemaRepository
 import com.harmony.modeler.core.services.SchemaService
 import io.kotest.inspectors.forAll
 import org.assertj.core.api.Assertions.*
@@ -54,6 +55,11 @@ class SchemaParserTest {
                 // should find out what peculiarity this has
                 Files.readString(Paths.get(schemaFeaturesDir, "liquibase-3.2.draft-07.json"))
             )
+            // TODO remove below
+            ,
+            Arguments.of(
+                Files.readString(Paths.get(schemaFeaturesDir, "sarif-2.1.0-rtm.3.json"))
+            )
         )
 
     }
@@ -63,12 +69,14 @@ class SchemaParserTest {
     @Test
     fun testParse() {
         val parser = SchemaParser(SchemaFormat.json)
-        val inputSchema = Files.readString(Paths.get(schemaStoreBasePath, "accelerator.json"))
+        val inputSchema = Files.readString(Paths.get(schemaFeaturesDir, "simple-car-with-reference.draft-07.json"))
 
         val result = parser.parse(inputSchema)
-
+        val db = InMemorySchemaRepository()
+        
+        db.addAll(result)
         val exploded = SchemaService.explode(result[0])
-
+        println("")
     }
 
     //    @Test
@@ -82,12 +90,22 @@ class SchemaParserTest {
         assertThat(result).hasSize(1)
 
         val exploded = SchemaService.explode(result[0])
-
+        
+        val db = InMemorySchemaRepository()
+        
+        db.addAll(result)
+        
+        val sorted = db.usage.toSortedMap(compareByDescending { db.usage[it]?.get() })
+        val sorted2 = db.usage.toList()
+            .sortedByDescending { it.second.get() }
+        
         val resultString = ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
             .setSerializationInclusion(Include.NON_NULL)
             .writeValueAsString(result)
+        
+        
 
 //        assertAll(
 //            { assertThat(exploded).hasSize(10) }

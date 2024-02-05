@@ -29,4 +29,12 @@ public class SchemaFile {
     private Boolean additionalProperties;
 
     private DiscoveryPattern matchedBy;
+
+    @Override
+    public String toString() {
+        return "SchemaFile{" +
+            "id=" + id +
+            ", filePath='" + filePath + '\'' +
+            '}';
+    }
 }

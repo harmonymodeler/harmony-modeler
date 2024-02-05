@@ -1,0 +1,25 @@
+{
+  "$id": "a-car",
+  "title": "Car",
+  "type": "object",
+  "description": "A Car",
+  "additionalProperties": false,
+  "causa": {
+    "tsOpenApi": true
+  },
+  "properties": {
+    "brand": {
+      "type": "string",
+      "description": "The car's brand"
+    },
+    "model": {
+      "type": "string",
+      "description": "The car's model"
+    },
+    "producedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The car's model"
+    }
+  }
+}

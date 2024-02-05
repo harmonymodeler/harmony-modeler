@@ -74,5 +74,4 @@ class SchemaRepositoryParserTest {
         logger.info { "" }
     }
 
-
 }
